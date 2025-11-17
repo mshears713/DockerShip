@@ -256,15 +256,65 @@ See the original PRD section below for complete implementation details.
 
 ## 🐳 Running with Docker
 
+The easiest way to run Harbor Docker Learning is with Docker! Perfect for Windows, macOS, and Linux.
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- For Windows users: See [WINDOWS_SETUP.md](WINDOWS_SETUP.md) for detailed instructions
+
+### Option 1: Docker Compose (Recommended) ⭐
+
+The simplest way to run the application:
+
+```bash
+# Start the application
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the application
+docker-compose down
+```
+
+**Windows users**: Double-click `start.bat` or `start.ps1` for an even easier experience!
+
+Access the app at **http://localhost:8501**
+
+### Option 2: Docker CLI
+
 ```bash
 # Build the Docker image
 docker build -t harbor-docker-learning .
 
 # Run the container
-docker run -p 8501:8501 harbor-docker-learning
+docker run -d -p 8501:8501 --name harbor-app harbor-docker-learning
 
-# Access the app at http://localhost:8501
+# View logs
+docker logs -f harbor-app
+
+# Stop the container
+docker stop harbor-app
 ```
+
+### Quick Start Scripts (Windows)
+
+For Windows users, we provide convenient scripts:
+
+- **start.bat** / **start.ps1** - Start the application
+- **stop.bat** / **stop.ps1** - Stop the application
+
+Just double-click to run!
+
+### Docker Benefits
+
+- ✅ No Python installation required
+- ✅ No dependency management needed
+- ✅ Works identically on all platforms
+- ✅ Isolated environment
+- ✅ One command to start
+- ✅ Easy to update and remove
 
 ---
 
