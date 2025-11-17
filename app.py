@@ -31,6 +31,29 @@ from data.db_access import (
     increment_tutorial_attempts
 )
 
+# Step 33: Cached wrapper functions for improved performance
+# Educational Note: Caching prevents redundant database queries,
+# significantly improving app responsiveness
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def get_all_tutorials_cached():
+    """Cached version of get_all_tutorials for better performance"""
+    return get_all_tutorials()
+
+@st.cache_data(ttl=300)
+def get_all_sections_cached():
+    """Cached version of get_all_sections for better performance"""
+    return get_all_sections()
+
+@st.cache_data(ttl=300)
+def get_section_stats_cached():
+    """Cached version of get_section_stats for better performance"""
+    return get_section_stats()
+
+@st.cache_data(ttl=60)  # Cache progress for 1 minute (updates more frequently)
+def get_tutorials_by_section_cached(section: str):
+    """Cached version of get_tutorials_by_section for better performance"""
+    return get_tutorials_by_section(section)
+
 # Import command parser utilities
 from utils.command_parser import parse_command, validate_docker_command, get_command_help
 
@@ -58,61 +81,247 @@ st.set_page_config(
 
 # Custom CSS for harbor theme
 # Educational note: We use nautical colors to reinforce the learning metaphor
+# Step 37: Refined UI colors and font consistency
 st.markdown("""
     <style>
-    /* Harbor-themed color palette */
+    /* Harbor-themed color palette - Refined for Phase 4 */
+    :root {
+        --harbor-navy: #1E3A5F;
+        --harbor-teal: #20B2AA;
+        --harbor-sky: #F0F4F8;
+        --harbor-sea-green: #2E8B57;
+        --harbor-text: #2C3E50;
+        --harbor-light-blue: #E8F4F8;
+        --harbor-warning: #FFB347;
+        --harbor-warning-bg: #FFF8E1;
+    }
+
     .stApp {
-        background-color: #F0F4F8;  /* Sky/harbor background */
+        background-color: var(--harbor-sky);
+        font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     }
 
-    /* Headers styled with nautical theme */
+    /* Headers styled with nautical theme - Enhanced consistency */
     h1 {
-        color: #1E3A5F;  /* Deep water navy */
-        font-weight: bold;
+        color: var(--harbor-navy);
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 1rem;
     }
 
-    h2, h3 {
-        color: #20B2AA;  /* Teal harbor water */
+    h2 {
+        color: var(--harbor-teal);
+        font-weight: 600;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
     }
 
-    /* Make the interface welcoming and professional */
+    h3 {
+        color: var(--harbor-navy);
+        font-weight: 600;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Body text consistency */
     .stMarkdown {
-        color: #2C3E50;
+        color: var(--harbor-text);
+        line-height: 1.6;
     }
 
-    /* Sidebar styling */
+    .stMarkdown p {
+        margin-bottom: 1rem;
+    }
+
+    /* Sidebar styling - Enhanced */
     [data-testid="stSidebar"] {
-        background-color: #1E3A5F;  /* Navy blue */
+        background: linear-gradient(180deg, var(--harbor-navy) 0%, #16304D 100%);
+        border-right: 2px solid var(--harbor-teal);
     }
 
     [data-testid="stSidebar"] .stMarkdown {
-        color: #F0F4F8;
+        color: var(--harbor-sky);
     }
 
-    /* Success boxes styled as harbor signals */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        color: #FFFFFF;
+    }
+
+    /* Success boxes styled as harbor signals - Enhanced */
     .stSuccess {
-        background-color: #2E8B57;  /* Sea green */
-        border-left: 4px solid #20B2AA;
+        background-color: #E1F5E1;
+        border-left: 5px solid var(--harbor-sea-green);
+        padding: 1rem;
+        border-radius: 5px;
+        color: var(--harbor-text);
     }
 
-    /* Info boxes styled as harbor notes */
+    /* Info boxes styled as harbor notes - Enhanced */
     .stInfo {
-        background-color: #E8F4F8;
-        border-left: 4px solid #20B2AA;
+        background-color: var(--harbor-light-blue);
+        border-left: 5px solid var(--harbor-teal);
+        padding: 1rem;
+        border-radius: 5px;
+        color: var(--harbor-text);
     }
 
-    /* Warning boxes styled as caution signals */
+    /* Warning boxes styled as caution signals - Enhanced */
     .stWarning {
-        background-color: #FFF8E1;
-        border-left: 4px solid #FFB347;
+        background-color: var(--harbor-warning-bg);
+        border-left: 5px solid var(--harbor-warning);
+        padding: 1rem;
+        border-radius: 5px;
+        color: var(--harbor-text);
+    }
+
+    /* Error boxes - Enhanced */
+    .stError {
+        background-color: #FFE5E5;
+        border-left: 5px solid #DC143C;
+        padding: 1rem;
+        border-radius: 5px;
+        color: var(--harbor-text);
+    }
+
+    /* Button styling - Enhanced consistency */
+    .stButton > button {
+        background-color: var(--harbor-teal);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .stButton > button:hover {
+        background-color: var(--harbor-sea-green);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Code blocks - Enhanced */
+    code {
+        background-color: #F5F5F5;
+        border: 1px solid #E0E0E0;
+        border-radius: 3px;
+        padding: 2px 6px;
+        font-family: 'Courier New', monospace;
+        color: var(--harbor-navy);
+    }
+
+    pre {
+        background-color: #F5F5F5;
+        border-left: 4px solid var(--harbor-teal);
+        padding: 1rem;
+        border-radius: 5px;
     }
 
     /* Harbor wave separator */
     .harbor-wave {
         text-align: center;
-        color: #20B2AA;
+        color: var(--harbor-teal);
         font-size: 24px;
         margin: 20px 0;
+    }
+
+    /* Progress bar styling */
+    .stProgress > div > div {
+        background-color: var(--harbor-teal);
+    }
+
+    /* Metric styling */
+    [data-testid="stMetricValue"] {
+        color: var(--harbor-navy);
+        font-weight: 600;
+    }
+
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        background-color: var(--harbor-light-blue);
+        border-radius: 5px;
+        font-weight: 600;
+        color: var(--harbor-navy);
+    }
+
+    /* Step 40: Responsive design for different screen sizes */
+    /* Mobile devices (phones, portrait tablets) */
+    @media only screen and (max-width: 768px) {
+        h1 {
+            font-size: 1.75rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+        }
+
+        .stButton > button {
+            font-size: 0.875rem;
+            padding: 0.4rem 0.8rem;
+        }
+
+        /* Adjust sidebar width for mobile */
+        [data-testid="stSidebar"] {
+            min-width: 250px;
+        }
+
+        /* Make code blocks scroll on mobile */
+        pre {
+            overflow-x: auto;
+            font-size: 0.75rem;
+        }
+
+        code {
+            font-size: 0.75rem;
+        }
+
+        /* Adjust metrics for mobile */
+        [data-testid="stMetricValue"] {
+            font-size: 1.25rem;
+        }
+    }
+
+    /* Tablets and small laptops */
+    @media only screen and (min-width: 769px) and (max-width: 1024px) {
+        h1 {
+            font-size: 2rem;
+        }
+
+        h2 {
+            font-size: 1.65rem;
+        }
+
+        h3 {
+            font-size: 1.35rem;
+        }
+    }
+
+    /* Large screens */
+    @media only screen and (min-width: 1025px) {
+        .stApp {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+    }
+
+    /* Print styles */
+    @media print {
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+
+        .stButton {
+            display: none;
+        }
+
+        .harbor-wave {
+            display: none;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -134,26 +343,54 @@ def render_sidebar():
         st.markdown("### Docker Learning")
         st.markdown("---")
 
-        # Progress tracking with enhanced statistics
-        progress = get_progress_percentage()
-        user_progress = get_user_progress()
-        all_tutorials = get_all_tutorials()
+        # Step 36: Enhanced error handling for missing or corrupted data
+        try:
+            # Progress tracking with enhanced statistics
+            # Step 33: Use cached functions for better performance
+            progress = get_progress_percentage()
+            user_progress = get_user_progress()
+            all_tutorials = get_all_tutorials_cached()
 
-        # Calculate statistics
-        total_tutorials = len(all_tutorials)
-        completed_count = sum(1 for p in user_progress.values() if p.completed)
-        in_progress_count = sum(1 for p in user_progress.values() if p.attempts > 0 and not p.completed)
+            # Check if tutorials data is available
+            if not all_tutorials:
+                st.warning("⚠️ No tutorial data found")
+                st.caption("Database may need initialization")
+                total_tutorials = 0
+                completed_count = 0
+                in_progress_count = 0
+            else:
+                # Calculate statistics
+                total_tutorials = len(all_tutorials)
+                completed_count = sum(1 for p in user_progress.values() if p.completed)
+                in_progress_count = sum(1 for p in user_progress.values() if p.attempts > 0 and not p.completed)
 
+        except Exception as e:
+            st.error("❌ Error loading data")
+            st.caption(f"Details: {str(e)[:50]}...")
+            total_tutorials = 0
+            completed_count = 0
+            in_progress_count = 0
+            progress = 0
+
+        # Step 39: Enhanced tooltips and help text
         st.markdown("### 📊 Your Progress")
         st.progress(progress / 100)
         st.caption(f"{progress:.0f}% Complete")
 
-        # Detailed statistics
+        # Detailed statistics with tooltips
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Completed", f"{completed_count}/{total_tutorials}")
+            st.metric(
+                "Completed",
+                f"{completed_count}/{total_tutorials}",
+                help="Number of tutorials you've successfully completed out of the total available"
+            )
         with col2:
-            st.metric("In Progress", in_progress_count)
+            st.metric(
+                "In Progress",
+                in_progress_count,
+                help="Tutorials you've started but not yet completed"
+            )
 
         # Achievement badges
         if progress >= 100:
@@ -172,9 +409,10 @@ def render_sidebar():
         # Navigation
         st.markdown("### 🧭 Navigation")
 
-        # Get sections and stats
-        sections = get_all_sections()
-        stats = get_section_stats()
+        # Get sections and stats (cached)
+        # Step 33: Use cached functions for better performance
+        sections = get_all_sections_cached()
+        stats = get_section_stats_cached()
 
         # Section selection
         section_options = (
@@ -182,10 +420,12 @@ def render_sidebar():
             [f"📚 {section}" for section in sections]
         )
 
+        # Step 39: Enhanced navigation with help text
         selected = st.radio(
             "Choose a section:",
             section_options,
-            key="section_nav"
+            key="section_nav",
+            help="Navigate between different tutorial sections. Start with 'Home' for an introduction, then explore 'Container Lifecycle' to understand Docker basics."
         )
 
         # Show section stats
@@ -210,7 +450,7 @@ def render_sidebar():
             """)
 
         # Version info
-        st.caption("Version 1.0 - Phase 1")
+        st.caption("Version 1.0 - Phase 4")
 
     return selected
 
@@ -233,7 +473,7 @@ def render_footer():
         **Harbor Docker Learning** is an interactive educational platform designed to
         teach Docker container fundamentals through the engaging harbor and ship metaphor.
         """)
-        st.caption("Version 1.0 - Phase 1")
+        st.caption("Version 1.0 - Phase 4")
 
     with col2:
         st.markdown("### 🧭 Navigation Tips")
@@ -285,11 +525,12 @@ def render_cli_input(tutorial):
     col1, col2 = st.columns([4, 1])
 
     with col1:
+        # Step 39: Enhanced help text for command input
         user_command = st.text_input(
             "Enter your Docker command:",
             key=tutorial_key,
             placeholder="e.g., docker run nginx",
-            help="Type the Docker command you want to practice",
+            help="💡 Type a Docker command to practice. The simulator will validate your command and provide feedback. Commands are simulated - no actual Docker installation needed!",
             label_visibility="collapsed"
         )
 
@@ -372,11 +613,37 @@ def render_tutorial_section(section_name: str):
     Args:
         section_name: Name of the section to display
     """
-    # Get tutorials for this section
-    tutorials = get_tutorials_by_section(section_name)
+    # Step 36: Enhanced error handling for missing or corrupted data
+    try:
+        # Get tutorials for this section (cached for performance)
+        # Step 33: Use cached functions for better performance
+        tutorials = get_tutorials_by_section_cached(section_name)
 
-    if not tutorials:
-        st.warning(f"No tutorials found for section: {section_name}")
+        if not tutorials:
+            st.warning(f"📭 No tutorials found for section: **{section_name}**")
+            st.info("""
+            **Possible reasons:**
+            - This section hasn't been populated with tutorials yet
+            - The database may need to be reseeded
+
+            **What you can do:**
+            - Try selecting a different section from the sidebar
+            - Check if the database has been initialized properly
+            """)
+            return
+
+    except Exception as e:
+        st.error("❌ **Error Loading Tutorial Section**")
+        st.error(f"""
+        We encountered an error while trying to load the tutorials for **{section_name}**.
+
+        **Error details:** {str(e)}
+
+        **What you can do:**
+        - Try refreshing the page
+        - Check your database connection
+        - Contact support if the problem persists
+        """)
         return
 
     # Section header
@@ -546,7 +813,8 @@ def render_lifecycle_page():
     st.markdown("---")
     st.header("📊 Your Learning Progress")
 
-    all_tutorials = get_all_tutorials()
+    # Step 33: Use cached functions for better performance
+    all_tutorials = get_all_tutorials_cached()
     user_progress = get_user_progress()
     completed_count = sum(1 for p in user_progress.values() if p.completed)
 

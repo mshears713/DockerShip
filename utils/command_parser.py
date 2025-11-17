@@ -97,6 +97,16 @@ def parse_command(command_str: str) -> CommandResult:
         >>> print(result.action)  # "run"
         >>> print(result.target)  # "nginx"
     """
+    # Step 31: Enhanced Input Validation
+    # Validate input is not None or non-string
+    if command_str is None or not isinstance(command_str, str):
+        return CommandResult(
+            command=str(command_str) if command_str else "",
+            valid=False,
+            message="❌ Invalid command input. Please enter a valid Docker command.",
+            help_hint="Commands must be text strings starting with 'docker'"
+        )
+
     # Clean and normalize the command
     command_str = command_str.strip()
 
@@ -107,6 +117,36 @@ def parse_command(command_str: str) -> CommandResult:
             valid=False,
             message="❌ No command entered. Try typing a Docker command!",
             help_hint="Start with: docker ps"
+        )
+
+    # Maximum length validation (prevent extremely long inputs)
+    MAX_COMMAND_LENGTH = 500
+    if len(command_str) > MAX_COMMAND_LENGTH:
+        return CommandResult(
+            command=command_str[:50] + "...",
+            valid=False,
+            message=f"❌ Command too long ({len(command_str)} characters). Maximum allowed: {MAX_COMMAND_LENGTH}",
+            help_hint="Docker commands should be concise. Check for errors or unnecessary repetition."
+        )
+
+    # Check for potentially dangerous characters (educational security note)
+    # While this is a simulation, we teach good input validation practices
+    dangerous_patterns = [';', '&&', '||', '|', '`', '$(' , '$(', '>${', '<(']
+    if any(pattern in command_str for pattern in dangerous_patterns):
+        return CommandResult(
+            command=command_str,
+            valid=False,
+            message="❌ Invalid characters detected in command",
+            help_hint="Docker commands should not contain shell operators like ;, &&, ||, or backticks. Use simple Docker command syntax."
+        )
+
+    # Check for excessive whitespace or control characters
+    if any(ord(char) < 32 and char not in ['\t', '\n'] for char in command_str):
+        return CommandResult(
+            command=command_str,
+            valid=False,
+            message="❌ Invalid control characters in command",
+            help_hint="Please use only printable characters in Docker commands."
         )
 
     # Check if command starts with 'docker'
