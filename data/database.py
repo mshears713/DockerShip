@@ -29,19 +29,39 @@ def get_db_connection() -> sqlite3.Connection:
 
     Returns:
         sqlite3.Connection: Active database connection
+
+    Raises:
+        sqlite3.Error: If connection cannot be established
+        OSError: If directory creation fails
     """
-    # Ensure the db directory exists
-    DB_DIR.mkdir(exist_ok=True)
+    # Step 32: Enhanced Exception Handling
+    try:
+        # Ensure the db directory exists
+        DB_DIR.mkdir(exist_ok=True, parents=True)
 
-    # Create connection with row factory for easier data access
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row  # Access columns by name
+    except OSError as e:
+        print(f"❌ Failed to create database directory at {DB_DIR}: {e}")
+        raise
 
-    # Enable foreign key constraints
-    # Educational note: This ensures data integrity between related tables
-    conn.execute("PRAGMA foreign_keys = ON;")
+    try:
+        # Create connection with row factory for easier data access
+        conn = sqlite3.connect(str(DB_PATH), timeout=10.0)
+        conn.row_factory = sqlite3.Row  # Access columns by name
 
-    return conn
+        # Enable foreign key constraints
+        # Educational note: This ensures data integrity between related tables
+        conn.execute("PRAGMA foreign_keys = ON;")
+
+        return conn
+
+    except sqlite3.Error as e:
+        print(f"❌ Failed to connect to database at {DB_PATH}: {e}")
+        print("💡 The database file may be corrupted. Try running database initialization.")
+        raise
+
+    except Exception as e:
+        print(f"❌ Unexpected error connecting to database: {e}")
+        raise
 
 
 def init_database(drop_existing: bool = False) -> bool:

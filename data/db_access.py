@@ -13,6 +13,13 @@ from datetime import datetime
 from data.database import get_db_connection
 from data.models import TutorialStep, UserProgress, ContainerState
 
+# Step 33: Import Streamlit for caching
+try:
+    import streamlit as st
+    HAS_STREAMLIT = True
+except ImportError:
+    HAS_STREAMLIT = False
+
 
 # ============================================================================
 # TUTORIAL OPERATIONS
@@ -27,36 +34,62 @@ def get_all_tutorials() -> List[TutorialStep]:
 
     Returns:
         List[TutorialStep]: All tutorials in learning order
+
+    Raises:
+        sqlite3.Error: If database operation fails
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Step 32: Enhanced Exception Handling
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT id, section, step_number, title, description,
-               expected_command, visual_state, help_text,
-               docker_concept, metaphor_explanation
-        FROM tutorials
-        ORDER BY section, step_number;
-    """)
+        cursor.execute("""
+            SELECT id, section, step_number, title, description,
+                   expected_command, visual_state, help_text,
+                   docker_concept, metaphor_explanation
+            FROM tutorials
+            ORDER BY section, step_number;
+        """)
 
-    tutorials = []
-    for row in cursor.fetchall():
-        tutorial = TutorialStep(
-            id=row['id'],
-            section=row['section'],
-            step_number=row['step_number'],
-            title=row['title'],
-            description=row['description'],
-            expected_command=row['expected_command'],
-            visual_state=row['visual_state'],
-            help_text=row['help_text'],
-            docker_concept=row['docker_concept'],
-            metaphor_explanation=row['metaphor_explanation']
-        )
-        tutorials.append(tutorial)
+        tutorials = []
+        for row in cursor.fetchall():
+            tutorial = TutorialStep(
+                id=row['id'],
+                section=row['section'],
+                step_number=row['step_number'],
+                title=row['title'],
+                description=row['description'],
+                expected_command=row['expected_command'],
+                visual_state=row['visual_state'],
+                help_text=row['help_text'],
+                docker_concept=row['docker_concept'],
+                metaphor_explanation=row['metaphor_explanation']
+            )
+            tutorials.append(tutorial)
 
-    conn.close()
-    return tutorials
+        conn.close()
+        return tutorials
+
+    except sqlite3.OperationalError as e:
+        print(f"❌ Database access error in get_all_tutorials: {e}")
+        print("💡 The tutorials table may not exist. Try running database initialization.")
+        return []
+
+    except sqlite3.Error as e:
+        print(f"❌ Database error in get_all_tutorials: {e}")
+        return []
+
+    except Exception as e:
+        print(f"❌ Unexpected error in get_all_tutorials: {e}")
+        return []
+
+    finally:
+        # Ensure connection is closed even if error occurs
+        try:
+            if 'conn' in locals():
+                conn.close()
+        except:
+            pass
 
 
 def get_tutorial_by_id(tutorial_id: int) -> Optional[TutorialStep]:
@@ -69,34 +102,56 @@ def get_tutorial_by_id(tutorial_id: int) -> Optional[TutorialStep]:
     Returns:
         TutorialStep if found, None otherwise
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Step 32: Enhanced Exception Handling
+    try:
+        # Validate input
+        if not isinstance(tutorial_id, int) or tutorial_id < 1:
+            print(f"❌ Invalid tutorial_id: {tutorial_id}. Must be a positive integer.")
+            return None
 
-    cursor.execute("""
-        SELECT id, section, step_number, title, description,
-               expected_command, visual_state, help_text,
-               docker_concept, metaphor_explanation
-        FROM tutorials
-        WHERE id = ?;
-    """, (tutorial_id,))
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    row = cursor.fetchone()
-    conn.close()
+        cursor.execute("""
+            SELECT id, section, step_number, title, description,
+                   expected_command, visual_state, help_text,
+                   docker_concept, metaphor_explanation
+            FROM tutorials
+            WHERE id = ?;
+        """, (tutorial_id,))
 
-    if row:
-        return TutorialStep(
-            id=row['id'],
-            section=row['section'],
-            step_number=row['step_number'],
-            title=row['title'],
-            description=row['description'],
-            expected_command=row['expected_command'],
-            visual_state=row['visual_state'],
-            help_text=row['help_text'],
-            docker_concept=row['docker_concept'],
-            metaphor_explanation=row['metaphor_explanation']
-        )
-    return None
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return TutorialStep(
+                id=row['id'],
+                section=row['section'],
+                step_number=row['step_number'],
+                title=row['title'],
+                description=row['description'],
+                expected_command=row['expected_command'],
+                visual_state=row['visual_state'],
+                help_text=row['help_text'],
+                docker_concept=row['docker_concept'],
+                metaphor_explanation=row['metaphor_explanation']
+            )
+        return None
+
+    except sqlite3.Error as e:
+        print(f"❌ Database error in get_tutorial_by_id: {e}")
+        return None
+
+    except Exception as e:
+        print(f"❌ Unexpected error in get_tutorial_by_id: {e}")
+        return None
+
+    finally:
+        try:
+            if 'conn' in locals():
+                conn.close()
+        except:
+            pass
 
 
 def get_tutorials_by_section(section: str) -> List[TutorialStep]:
