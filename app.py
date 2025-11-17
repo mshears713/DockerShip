@@ -19,7 +19,8 @@ from typing import Optional
 # Add project directories to path for imports
 sys.path.append(os.path.dirname(__file__))
 
-# Import database access functions
+# Import database setup and access functions
+from data.database import init_database, verify_database, DB_PATH
 from data.db_access import (
     get_all_tutorials,
     get_all_sections,
@@ -30,6 +31,38 @@ from data.db_access import (
     mark_tutorial_complete,
     increment_tutorial_attempts
 )
+
+# Database Initialization - ensures tables exist before app starts
+def ensure_database_initialized():
+    """
+    Ensure database is initialized before the app starts
+
+    Educational Note: This prevents database errors by creating tables
+    and seeding initial tutorial content if needed.
+    """
+    # Check if database exists and has required tables
+    if not DB_PATH.exists() or not verify_database():
+        print("🔄 Initializing database for first run...")
+
+        # Initialize database tables
+        if init_database():
+            print("✅ Database tables created successfully")
+
+            # Seed with tutorial content
+            try:
+                from data.seed_data import seed_tutorials, seed_sample_container_states
+                seed_tutorials()
+                seed_sample_container_states()
+                print("✅ Tutorial content loaded successfully")
+            except Exception as e:
+                print(f"⚠️  Warning: Could not seed database: {e}")
+                print("   The app will work but won't have tutorial content.")
+        else:
+            print("❌ Failed to initialize database")
+            print("   Some features may not work correctly.")
+
+# Initialize database on module load
+ensure_database_initialized()
 
 # Step 33: Cached wrapper functions for improved performance
 # Educational Note: Caching prevents redundant database queries,
