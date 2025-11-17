@@ -1,0 +1,241 @@
+# ============================================================================
+# .dockerignore - Docker Build Context Exclusions
+# ============================================================================
+#
+# Educational Note: This file tells Docker which files to IGNORE when building
+# Similar to .gitignore for Git, but for Docker builds
+#
+# Why use .dockerignore?
+# - Faster builds (less data to send to Docker daemon)
+# - Smaller images (excluded files won't be copied)
+# - Better security (don't copy secrets accidentally)
+# - Cleaner builds (no temporary or generated files)
+#
+# Think of it as: "Don't load this cargo onto the ship"
+#
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Git and Version Control
+# ----------------------------------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.github
+
+# Educational Note: We don't need Git history inside the container
+# The .git folder can be very large and serves no purpose in production
+
+# ----------------------------------------------------------------------------
+# Python Cache and Compiled Files
+# ----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Educational Note: Python creates these when running
+# They're regenerated in the container, so no need to copy them
+
+# Build artifacts
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ----------------------------------------------------------------------------
+# Virtual Environments
+# ----------------------------------------------------------------------------
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Educational Note: Virtual environments are for local development
+# The container creates its own isolated environment
+
+# ----------------------------------------------------------------------------
+# IDE and Editor Files
+# ----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Educational Note: Editor configurations are personal preferences
+# They don't belong in production containers
+
+# ----------------------------------------------------------------------------
+# Documentation and Development Files
+# ----------------------------------------------------------------------------
+README.md
+PHASE4_TESTING.md
+docs/TUTORIAL_GUIDE.md
+docs/EXAMPLE_COMMANDS.md
+*.md
+!requirements.md
+
+# Educational Note: Documentation is for humans reading the code
+# The running app doesn't need it (but README could be included if desired)
+# The ! prefix means "don't ignore this file" (exception to *.md)
+
+# ----------------------------------------------------------------------------
+# Testing
+# ----------------------------------------------------------------------------
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Educational Note: Tests are for development and CI/CD
+# Production containers don't need test files
+
+# ----------------------------------------------------------------------------
+# Docker Files
+# ----------------------------------------------------------------------------
+Dockerfile
+.dockerignore
+docker-compose.yml
+.docker/
+
+# Educational Note: These files are for building the image
+# The running container doesn't need them
+# (The Dockerfile is the blueprint - the ship doesn't carry its own blueprint!)
+
+# ----------------------------------------------------------------------------
+# Logs and Temporary Files
+# ----------------------------------------------------------------------------
+*.log
+logs/
+*.tmp
+tmp/
+temp/
+
+# Educational Note: Logs and temp files from local development
+# Containers create their own logs at runtime
+
+# ----------------------------------------------------------------------------
+# Database Files (Optional - depends on your setup)
+# ----------------------------------------------------------------------------
+# Uncomment if you want to exclude local database and regenerate in container
+# *.sqlite
+# *.db
+# data/tutorials.sqlite
+
+# Educational Note: For this app, we DO copy the database
+# because it contains tutorial content
+# But in many apps, you'd exclude databases and use external storage
+
+# ----------------------------------------------------------------------------
+# Environment and Secrets
+# ----------------------------------------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+secrets/
+credentials/
+
+# Educational Note: CRITICAL - never copy secrets into images!
+# Secrets should be:
+# - Passed as environment variables at runtime
+# - Mounted from secure secret stores
+# - Never baked into images
+
+# ----------------------------------------------------------------------------
+# CI/CD
+# ----------------------------------------------------------------------------
+.circleci/
+.travis.yml
+.gitlab-ci.yml
+Jenkinsfile
+.github/
+
+# Educational Note: CI/CD configs are for automation pipelines
+# They're not needed in the runtime container
+
+# ----------------------------------------------------------------------------
+# Node.js (if using any frontend build tools)
+# ----------------------------------------------------------------------------
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# ----------------------------------------------------------------------------
+# OS Generated Files
+# ----------------------------------------------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Educational Note: OS-specific files that serve no purpose in Linux containers
+
+# ----------------------------------------------------------------------------
+# Large Media Files (if not needed in app)
+# ----------------------------------------------------------------------------
+# *.mp4
+# *.avi
+# *.mov
+# *.zip
+# *.tar.gz
+
+# Educational Note: Large files increase image size significantly
+# Only include media that's actually needed by the app
+
+# ============================================================================
+# Checking What Gets Copied
+# ============================================================================
+#
+# To see what files would be included in your Docker build:
+# docker build --no-cache -t test . 2>&1 | grep "Step"
+#
+# Or use a tool like dive to inspect layers:
+# dive harbor-docker-learning
+#
+# ============================================================================
+
+# ============================================================================
+# Best Practices Summary
+# ============================================================================
+#
+# ✅ Exclude version control files (.git)
+# ✅ Exclude virtual environments (env/, venv/)
+# ✅ Exclude IDE configs (.vscode/, .idea/)
+# ✅ Exclude build artifacts (__pycache__, *.pyc)
+# ✅ Exclude documentation (*.md) unless needed
+# ✅ Exclude tests (tests/, *_test.py)
+# ✅ ALWAYS exclude secrets (.env, *.key)
+# ✅ Exclude CI/CD configs (.github/, .gitlab-ci.yml)
+# ✅ Exclude OS files (.DS_Store, Thumbs.db)
+# ✅ Exclude Docker files (Dockerfile, docker-compose.yml)
+#
+# Result: Faster builds, smaller images, better security!
+#
+# ============================================================================
+
+# 🎓 Educational Takeaway:
+# Just as a ship only carries necessary cargo for its voyage,
+# a Docker image should only contain files needed to run the application.
+# Everything else is extra weight that slows you down!

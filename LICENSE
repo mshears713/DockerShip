@@ -1,0 +1,80 @@
+MIT License
+
+Copyright (c) 2024 Harbor Docker Learning Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## About This License
+
+The MIT License is one of the most permissive and popular open-source licenses.
+It allows you to:
+
+✅ Use the software for any purpose (commercial or personal)
+✅ Modify the source code as you see fit
+✅ Distribute copies of the original or modified software
+✅ Sublicense the software
+✅ Sell copies of the software
+
+The only requirement is that you include the original copyright notice and
+license text in any copy or substantial portion of the software.
+
+## Why MIT License?
+
+We chose the MIT License for Harbor Docker Learning because:
+
+1. **Educational Mission**: We want this project to be freely used by students,
+   educators, and developers worldwide without restrictions.
+
+2. **Maximum Freedom**: The MIT License allows anyone to use, modify, and even
+   commercialize the software while keeping it open source.
+
+3. **Simple & Clear**: Unlike more complex licenses (GPL, Apache), the MIT
+   License is easy to understand for beginners.
+
+4. **Industry Standard**: Many popular open-source projects use MIT, making it
+   familiar and trusted in the developer community.
+
+5. **No Copyleft**: Unlike GPL, MIT doesn't require derivative works to remain
+   open source, giving users maximum flexibility.
+
+## Educational Note
+
+This license exemplifies the open-source philosophy:
+- Share knowledge freely
+- Build on others' work
+- Contribute back to the community
+- Enable innovation through collaboration
+
+Just as ships in a harbor benefit from shared infrastructure, software projects
+thrive when knowledge is openly shared!
+
+## Contributing
+
+By contributing to Harbor Docker Learning, you agree that your contributions
+will be licensed under the same MIT License. See CONTRIBUTING.md for details
+(if available).
+
+## Questions?
+
+For questions about the license, please:
+- Review the full license text above
+- Check out https://choosealicense.com/licenses/mit/
+- Open an issue in the GitHub repository
