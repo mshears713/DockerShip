@@ -1,0 +1,402 @@
+# ============================================================================
+# Harbor Docker Learning - Docker Compose Configuration
+# ============================================================================
+#
+# Educational Note: Docker Compose is a tool for defining and running
+# multi-container Docker applications. Even for single-container apps like
+# this one, it simplifies deployment and provides better developer experience.
+#
+# Why use Docker Compose?
+# - Simpler commands (docker-compose up vs long docker run commands)
+# - Configuration as code (this file documents how to run the app)
+# - Easy environment management
+# - Perfect for development and testing
+# - Windows-friendly (no complex shell commands needed)
+#
+# Think of docker-compose as the harbor master's operations manual!
+#
+# ============================================================================
+
+version: '3.8'
+
+# Educational Note: Version 3.8 is widely supported and includes all features
+# we need. Newer versions (3.9+) exist but 3.8 has the best compatibility.
+
+services:
+  # --------------------------------------------------------------------------
+  # Main Application Service
+  # --------------------------------------------------------------------------
+  # Educational Note: Each service is like a ship in the harbor.
+  # This is our main teaching application.
+
+  harbor-app:
+    # Service name: Used to reference this container
+    # Educational Note: You can access this service by name from other services
+
+    # ------------------------------------------------------------------
+    # Build Configuration
+    # ------------------------------------------------------------------
+    build:
+      context: .
+      # Educational Note: Context is the directory sent to Docker daemon
+      # The . means "current directory"
+
+      dockerfile: Dockerfile
+      # Educational Note: We explicitly specify the Dockerfile name
+      # (though Docker would find it automatically)
+
+      args:
+        # Educational Note: Build arguments can be passed here
+        # Useful for different build configurations
+        # Example: PYTHON_VERSION: "3.11"
+        BUILDKIT_INLINE_CACHE: 1
+        # This enables build caching for faster rebuilds
+
+    # ------------------------------------------------------------------
+    # Container Configuration
+    # ------------------------------------------------------------------
+    container_name: harbor-docker-learning
+    # Educational Note: Friendly name for the container
+    # Without this, Docker Compose generates a name like "dockership_harbor-app_1"
+
+    # ------------------------------------------------------------------
+    # Port Mapping
+    # ------------------------------------------------------------------
+    ports:
+      - "8501:8501"
+      # Educational Note: Maps host port 8501 to container port 8501
+      # Format: "HOST:CONTAINER"
+      # - LEFT side (8501): Port on your Windows laptop
+      # - RIGHT side (8501): Port inside the container
+      # This is the "gangway" connecting the ship to the pier!
+
+      # To use a different port on Windows:
+      # - "8080:8501"  # Access at http://localhost:8080
+
+    # ------------------------------------------------------------------
+    # Volume Mapping (Optional)
+    # ------------------------------------------------------------------
+    volumes:
+      # Educational Note: Volumes persist data outside the container
+      # If you remove the container, data in volumes remains
+
+      # Option 1: Named volume (recommended for production)
+      - harbor-data:/app/data
+      # This creates a Docker-managed volume for the database
+
+      # Option 2: Bind mount (for development)
+      # Uncomment below to use local directory instead:
+      # - ./data:/app/data
+      # This maps your local ./data directory into the container
+      # Changes are immediately reflected (good for development)
+
+      # Windows Note: Docker Desktop handles path conversion automatically
+      # You can use relative paths (./data) or absolute Windows paths
+      # Example: - C:\Users\YourName\harbor-data:/app/data
+
+    # ------------------------------------------------------------------
+    # Environment Variables
+    # ------------------------------------------------------------------
+    environment:
+      # Streamlit Configuration
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+
+      # Educational Note: These override the ENV settings in Dockerfile
+      # Useful for different environments (dev, staging, production)
+
+      # Application Configuration
+      - PYTHONUNBUFFERED=1
+      # Educational Note: Ensures Python output appears immediately in logs
+      # Without this, you might not see print statements in real-time
+
+      # Add your custom environment variables here:
+      # - APP_ENV=production
+      # - DEBUG=false
+
+    # Alternative: Use .env file
+    # env_file:
+    #   - .env
+    # Educational Note: Loads environment variables from a .env file
+    # Useful for secrets and configuration (don't commit .env to git!)
+
+    # ------------------------------------------------------------------
+    # Restart Policy
+    # ------------------------------------------------------------------
+    restart: unless-stopped
+    # Educational Note: Restart policy controls what happens when container exits
+    # - no: Don't restart (default)
+    # - always: Always restart
+    # - on-failure: Restart only on error
+    # - unless-stopped: Always restart unless explicitly stopped
+    #
+    # For a learning app, unless-stopped is good - it survives reboots
+    # but respects manual stops
+
+    # ------------------------------------------------------------------
+    # Health Check
+    # ------------------------------------------------------------------
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+    # Educational Note: Health checks monitor if the app is working
+    # - test: Command to check health
+    # - interval: How often to check (every 30 seconds)
+    # - timeout: How long to wait for response (10 seconds)
+    # - retries: Failed attempts before marking unhealthy (3 times)
+    # - start_period: Grace period during startup (5 seconds)
+    #
+    # Docker can auto-restart unhealthy containers!
+
+    # ------------------------------------------------------------------
+    # Resource Limits (Optional)
+    # ------------------------------------------------------------------
+    # Uncomment to set memory and CPU limits
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+
+    # Educational Note: Resource limits prevent one container from
+    # consuming all system resources. Useful in production!
+    # - limits: Maximum resources
+    # - reservations: Guaranteed minimum resources
+
+    # ------------------------------------------------------------------
+    # Networking
+    # ------------------------------------------------------------------
+    networks:
+      - harbor-network
+
+    # Educational Note: Networks allow containers to communicate
+    # Even with one container, defining a network is good practice
+    # for future expansion (e.g., adding a database container)
+
+    # ------------------------------------------------------------------
+    # Logging Configuration
+    # ------------------------------------------------------------------
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Educational Note: Configure how Docker stores logs
+    # - json-file: Default driver, stores logs as JSON
+    # - max-size: Maximum size per log file (10 MB)
+    # - max-file: Number of log files to keep (3 files)
+    # This prevents logs from consuming too much disk space
+
+# ----------------------------------------------------------------------------
+# Networks
+# ----------------------------------------------------------------------------
+# Educational Note: Define custom networks for container communication
+networks:
+  harbor-network:
+    driver: bridge
+    # Educational Note: Bridge network is the default driver
+    # Containers on the same bridge network can communicate by name
+    # Think of it as the harbor's communication system!
+
+# ----------------------------------------------------------------------------
+# Volumes
+# ----------------------------------------------------------------------------
+# Educational Note: Named volumes for persistent data
+volumes:
+  harbor-data:
+    driver: local
+    # Educational Note: Local driver stores data on the Docker host
+    # Data persists even when containers are removed
+    #
+    # Where is the data stored?
+    # - Windows: C:\ProgramData\docker\volumes\
+    # - Linux: /var/lib/docker/volumes/
+    # - macOS: /var/lib/docker/volumes/ (inside Docker Desktop VM)
+    #
+    # You can also use driver_opts for custom locations:
+    # driver_opts:
+    #   type: none
+    #   device: C:\docker-data\harbor
+    #   o: bind
+
+# ============================================================================
+# Usage Instructions
+# ============================================================================
+#
+# 🚀 Start the Application:
+# -------------------------
+# docker-compose up
+#
+# Educational Note: This builds the image (if needed) and starts the container
+# Logs are shown in the terminal. Press Ctrl+C to stop.
+#
+#
+# 🚀 Start in Detached Mode (Background):
+# ----------------------------------------
+# docker-compose up -d
+#
+# Educational Note: Runs in background. Container keeps running after you close terminal.
+#
+#
+# 📋 View Logs:
+# -------------
+# docker-compose logs -f
+#
+# Educational Note: The -f flag "follows" logs (like tail -f)
+# Shows real-time output from the container
+#
+#
+# 🛑 Stop the Application:
+# ------------------------
+# docker-compose down
+#
+# Educational Note: Stops and removes containers, but keeps volumes
+# Your data is safe!
+#
+#
+# 🗑️ Stop and Remove Everything (including volumes):
+# ---------------------------------------------------
+# docker-compose down -v
+#
+# Educational Note: Removes containers AND volumes. All data is deleted!
+# Use this for a completely fresh start.
+#
+#
+# 🔄 Rebuild After Code Changes:
+# -------------------------------
+# docker-compose up --build
+#
+# Educational Note: Forces rebuild of the image before starting
+# Use this after modifying code or Dockerfile
+#
+#
+# 🔍 Check Container Status:
+# --------------------------
+# docker-compose ps
+#
+# Educational Note: Shows status of all services defined in this file
+#
+#
+# 🐚 Access Container Shell:
+# --------------------------
+# docker-compose exec harbor-app /bin/bash
+#
+# Educational Note: Opens a shell inside the running container
+# Useful for debugging. Type 'exit' to leave.
+#
+#
+# 📊 View Resource Usage:
+# -----------------------
+# docker-compose stats
+#
+# Educational Note: Real-time view of CPU, memory, network usage
+# Press Ctrl+C to exit
+#
+# ============================================================================
+
+# ============================================================================
+# Windows-Specific Notes
+# ============================================================================
+#
+# ✅ Prerequisites for Windows:
+# - Docker Desktop for Windows installed and running
+# - WSL 2 enabled (recommended for better performance)
+# - Shared drives configured in Docker Desktop settings (if using bind mounts)
+#
+# 📁 Windows Path Formatting:
+# - Use forward slashes: ./data (Docker handles conversion)
+# - Or use Windows paths: C:\Users\YourName\docker-data
+# - Avoid spaces in paths or use quotes: "C:\My Projects\harbor"
+#
+# 🔧 Common Windows Issues:
+#
+# Issue: "Error response from daemon: driver failed"
+# Solution: Enable WSL 2 in Docker Desktop settings
+#
+# Issue: "Cannot start service: Ports are not available"
+# Solution: Another app is using port 8501. Change to different port:
+#           ports: - "8080:8501"
+#
+# Issue: "The system cannot find the path specified"
+# Solution: Use absolute paths or ensure you're in the project directory
+#
+# Issue: Slow performance
+# Solution:
+# - Enable WSL 2 backend in Docker Desktop
+# - Store project files in WSL filesystem (\\wsl$\Ubuntu\home\...)
+# - Increase Docker Desktop resource limits in settings
+#
+# 🎯 PowerShell vs Command Prompt:
+# - Both work fine with Docker Compose
+# - PowerShell recommended (better output formatting)
+# - Git Bash also works great
+#
+# 🔐 Firewall:
+# - Windows Firewall may prompt for Docker access
+# - Click "Allow" to enable container networking
+#
+# ============================================================================
+
+# ============================================================================
+# Multi-Container Example (For Future Expansion)
+# ============================================================================
+#
+# If you want to add a database or other services later:
+#
+# services:
+#   harbor-app:
+#     # ... existing config ...
+#     depends_on:
+#       - database
+#     environment:
+#       - DATABASE_URL=postgresql://user:pass@database:5432/harbor
+#
+#   database:
+#     image: postgres:15-alpine
+#     container_name: harbor-database
+#     environment:
+#       - POSTGRES_USER=harboruser
+#       - POSTGRES_PASSWORD=harborpass
+#       - POSTGRES_DB=harbor
+#     volumes:
+#       - postgres-data:/var/lib/postgresql/data
+#     networks:
+#       - harbor-network
+#
+# volumes:
+#   harbor-data:
+#   postgres-data:
+#
+# Educational Note: depends_on ensures database starts before app
+# Containers can talk to each other using service names as hostnames!
+#
+# ============================================================================
+
+# 🎓 EDUCATIONAL SUMMARY:
+#
+# This docker-compose.yml demonstrates:
+# ✅ Service definition and configuration
+# ✅ Build configuration
+# ✅ Port mapping for web access
+# ✅ Volume management for data persistence
+# ✅ Environment variable configuration
+# ✅ Health checks for reliability
+# ✅ Networking for container communication
+# ✅ Logging configuration
+# ✅ Windows compatibility
+# ✅ Restart policies for production
+# ✅ Resource management
+#
+# You're using Docker Compose to orchestrate containerized applications!
+# This same pattern scales from one container to hundreds.
+# Welcome to the world of container orchestration! 🚢
