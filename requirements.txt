@@ -1,0 +1,11 @@
+# Harbor Docker Learning - Python Dependencies
+# Teaching Docker container concepts through an interactive Streamlit app
+
+# Core framework for the interactive web application
+streamlit>=1.28.0
+
+# Data manipulation for tutorial steps and state handling
+pandas>=2.0.0
+
+# Additional utilities
+# Note: SQLite is included in Python standard library, no separate installation needed

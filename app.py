@@ -1,0 +1,407 @@
+"""
+Harbor Docker Learning - Interactive Streamlit Application
+Teaching Docker container concepts through the harbor and ship metaphor
+
+Educational Purpose: This app simulates Docker CLI operations without requiring
+Docker installation, making it perfect for beginners.
+
+Metaphor: Ships in a harbor = Containers in Docker
+- Ships docking = Containers starting
+- Ships sailing = Containers running
+- Ships leaving = Containers stopping/removing
+"""
+
+import streamlit as st
+import sys
+import os
+from typing import Optional
+
+# Add project directories to path for imports
+sys.path.append(os.path.dirname(__file__))
+
+# Import database access functions
+from data.db_access import (
+    get_all_tutorials,
+    get_all_sections,
+    get_section_stats,
+    get_tutorials_by_section,
+    get_progress_percentage
+)
+
+# Page configuration with harbor theme
+st.set_page_config(
+    page_title="Harbor Docker Learning",
+    page_icon="🚢",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for harbor theme
+# Educational note: We use nautical colors to reinforce the learning metaphor
+st.markdown("""
+    <style>
+    /* Harbor-themed color palette */
+    .stApp {
+        background-color: #F0F4F8;  /* Sky/harbor background */
+    }
+
+    /* Headers styled with nautical theme */
+    h1 {
+        color: #1E3A5F;  /* Deep water navy */
+        font-weight: bold;
+    }
+
+    h2, h3 {
+        color: #20B2AA;  /* Teal harbor water */
+    }
+
+    /* Make the interface welcoming and professional */
+    .stMarkdown {
+        color: #2C3E50;
+    }
+
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: #1E3A5F;  /* Navy blue */
+    }
+
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #F0F4F8;
+    }
+
+    /* Success boxes styled as harbor signals */
+    .stSuccess {
+        background-color: #2E8B57;  /* Sea green */
+        border-left: 4px solid #20B2AA;
+    }
+
+    /* Info boxes styled as harbor notes */
+    .stInfo {
+        background-color: #E8F4F8;
+        border-left: 4px solid #20B2AA;
+    }
+
+    /* Warning boxes styled as caution signals */
+    .stWarning {
+        background-color: #FFF8E1;
+        border-left: 4px solid #FFB347;
+    }
+
+    /* Harbor wave separator */
+    .harbor-wave {
+        text-align: center;
+        color: #20B2AA;
+        font-size: 24px;
+        margin: 20px 0;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+def render_sidebar():
+    """
+    Render the sidebar with navigation and progress tracking
+
+    Educational Purpose: Provides easy navigation between tutorial sections
+    and shows overall learning progress.
+    """
+    with st.sidebar:
+        # Harbor logo/header
+        st.markdown("# 🚢 Harbor")
+        st.markdown("### Docker Learning")
+        st.markdown("---")
+
+        # Progress tracking
+        progress = get_progress_percentage()
+        st.markdown("### 📊 Your Progress")
+        st.progress(progress / 100)
+        st.caption(f"{progress:.0f}% Complete")
+        st.markdown("---")
+
+        # Navigation
+        st.markdown("### 🧭 Navigation")
+
+        # Get sections and stats
+        sections = get_all_sections()
+        stats = get_section_stats()
+
+        # Section selection
+        section_options = ["🏠 Home"] + [f"📚 {section}" for section in sections]
+
+        selected = st.radio(
+            "Choose a section:",
+            section_options,
+            key="section_nav"
+        )
+
+        # Show section stats
+        if selected != "🏠 Home":
+            section_name = selected.replace("📚 ", "")
+            if section_name in stats:
+                st.caption(f"{stats[section_name]} tutorials in this section")
+
+        st.markdown("---")
+
+        # Help and info
+        with st.expander("ℹ️ About Harbor"):
+            st.markdown("""
+            **Harbor Docker Learning** teaches Docker through the metaphor of
+            ships in a harbor.
+
+            - 🚢 Containers = Ships
+            - 🏗️ Images = Blueprints
+            - ⚓ Docker = Harbor
+
+            Navigate using the menu above!
+            """)
+
+        # Version info
+        st.caption("Version 1.0 - Phase 1")
+
+    return selected
+
+
+def render_footer():
+    """
+    Render the footer with project info and navigation hints
+
+    Educational Purpose: Provides context, credits, and helpful navigation tips
+    """
+    st.markdown("---")
+    st.markdown('<div class="harbor-wave">〰️ 〰️ 〰️ 〰️ 〰️</div>', unsafe_allow_html=True)
+
+    # Footer content in columns
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("### ⚓ About")
+        st.markdown("""
+        **Harbor Docker Learning** is an interactive educational platform designed to
+        teach Docker container fundamentals through the engaging harbor and ship metaphor.
+        """)
+        st.caption("Version 1.0 - Phase 1")
+
+    with col2:
+        st.markdown("### 🧭 Navigation Tips")
+        st.markdown("""
+        - Use the **sidebar** to switch sections
+        - **Expand tutorials** to read content
+        - Track your **progress bar** in sidebar
+        - Look for **💡 help hints** in tutorials
+        """)
+
+    with col3:
+        st.markdown("### 🚢 Metaphor Guide")
+        st.markdown("""
+        - 🚢 **Ships** = Containers
+        - 🏗️ **Blueprints** = Images
+        - ⚓ **Harbor** = Docker Engine
+        - 🎯 **Dock** = Host System
+        """)
+
+    # Copyright and educational note
+    st.markdown("---")
+    st.caption("""
+    🎓 **Educational Project** |
+    Built with Streamlit & Python |
+    Designed for Docker beginners |
+    Learning through metaphor
+    """)
+
+
+def render_tutorial_section(section_name: str):
+    """
+    Render a specific tutorial section
+
+    Educational Purpose: Displays all tutorials within a section for focused learning
+
+    Args:
+        section_name: Name of the section to display
+    """
+    # Get tutorials for this section
+    tutorials = get_tutorials_by_section(section_name)
+
+    if not tutorials:
+        st.warning(f"No tutorials found for section: {section_name}")
+        return
+
+    # Section header
+    st.title(f"📚 {section_name}")
+    st.markdown("---")
+
+    # Show overview
+    st.markdown(f"**{len(tutorials)} tutorial{'s' if len(tutorials) != 1 else ''} in this section**")
+    st.markdown("---")
+
+    # Display each tutorial in the section
+    for idx, tutorial in enumerate(tutorials, 1):
+        # Create an expander for each tutorial
+        with st.expander(f"**{idx}. {tutorial.title}**", expanded=(idx == 1)):
+            # Tutorial content
+            st.markdown(tutorial.description)
+
+            # Show Docker concept if available
+            if tutorial.docker_concept:
+                st.info(f"**🎯 Docker Concept:** {tutorial.docker_concept}")
+
+            # Show metaphor explanation if available
+            if tutorial.metaphor_explanation:
+                st.success(f"**🚢 Harbor Metaphor:** {tutorial.metaphor_explanation}")
+
+            # Show help text if available
+            if tutorial.help_text:
+                with st.expander("💡 Need Help?"):
+                    st.markdown(tutorial.help_text)
+
+            # Show expected command if available
+            if tutorial.expected_command:
+                st.markdown("**Expected Command:**")
+                st.code(tutorial.expected_command, language="bash")
+
+        # Add separator between tutorials
+        if idx < len(tutorials):
+            st.markdown('<div class="harbor-wave">〰️ 〰️ 〰️</div>', unsafe_allow_html=True)
+
+    # Render footer
+    render_footer()
+
+
+def main():
+    """
+    Main application entry point
+
+    Educational scaffolding: Each section is designed to introduce concepts
+    progressively, starting with the metaphor and building to Docker concepts.
+    """
+
+    # Render sidebar and get navigation selection
+    selected_section = render_sidebar()
+
+    # Route to appropriate view based on selection
+    if selected_section == "🏠 Home":
+        render_home_page()
+    else:
+        # Extract section name (remove emoji prefix)
+        section_name = selected_section.replace("📚 ", "")
+        render_tutorial_section(section_name)
+
+
+def render_home_page():
+    """
+    Render the home/welcome page
+
+    Educational Purpose: Introduces the metaphor and sets expectations
+    """
+    # Welcome header with ship icon
+    st.title("🚢 Welcome to Harbor Docker Learning")
+    st.markdown("### *Master Docker Containers Through an Interactive Harbor Experience*")
+
+    # Add visual separator
+    st.markdown("---")
+
+    # Main welcome content area
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.header("⚓ Welcome Aboard!")
+
+        st.markdown("""
+        Welcome to **Harbor Docker Learning**, where you'll learn Docker container
+        concepts through an engaging harbor and ship metaphor!
+
+        **Think of it this way:**
+        - 🚢 **Ships** represent **Docker Containers**
+        - ⚓ **Harbor** represents your **Docker Environment**
+        - 🏗️ **Blueprints** represent **Docker Images**
+
+        Just as harbor workers manage ships docking, sailing, and leaving port,
+        you'll learn to manage Docker containers through their entire lifecycle.
+        """)
+
+        st.info("""
+        💡 **Why this metaphor?**
+        Docker concepts can seem abstract at first. By connecting them to familiar
+        ideas like ships in a harbor, we make learning intuitive and memorable!
+        """)
+
+    with col2:
+        # Visual representation using emojis
+        st.markdown("### 🌊 Your Harbor")
+        st.markdown("""
+        ```
+
+              🚢  🚢
+            ⚓      ⚓
+        ~~~~~~~~~~~~~~~~~~~
+          HARBOR  DOCK
+        ~~~~~~~~~~~~~~~~~~~
+
+        ```
+        """)
+
+        st.success("✅ Environment Ready!")
+        st.caption("Your learning harbor is set up and ready to receive ships.")
+
+    # Introduction to the learning journey
+    st.markdown("---")
+    st.header("🎯 What You'll Learn")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("""
+        #### 📦 Container Basics
+        - What containers are
+        - Container lifecycle
+        - Running your first container
+        """)
+
+    with col2:
+        st.markdown("""
+        #### 🔧 Docker Commands
+        - docker run
+        - docker ps
+        - docker stop
+        - docker rm
+        """)
+
+    with col3:
+        st.markdown("""
+        #### 🎨 Visual Learning
+        - Interactive simulations
+        - Real-time feedback
+        - Progress tracking
+        """)
+
+    # Getting started section
+    st.markdown("---")
+    st.header("🚀 Getting Started")
+
+    st.markdown("""
+    This application is organized into progressive tutorials that will guide you
+    step-by-step through Docker fundamentals.
+
+    **Ready to begin your journey?**
+    - 👈 Use the **sidebar** to navigate between tutorials
+    - 📝 Follow the **step-by-step instructions** in each section
+    - 💻 Practice with the **simulated Docker CLI**
+    - 📊 Track your **progress** as you master each concept
+    """)
+
+    # Quick start section
+    st.markdown("---")
+    st.markdown("### 🎓 Ready to Start?")
+    st.info("""
+    👈 **Open the sidebar** and select a tutorial section to begin your learning journey!
+
+    Start with **Introduction** to understand the basics, then move to **Basic Commands**
+    for hands-on practice.
+    """)
+
+    # Render footer
+    render_footer()
+
+if __name__ == "__main__":
+    # Educational note: This is the entry point for the Streamlit application
+    # When you run 'streamlit run app.py', this is where execution begins
+    main()
