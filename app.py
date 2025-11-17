@@ -25,7 +25,27 @@ from data.db_access import (
     get_all_sections,
     get_section_stats,
     get_tutorials_by_section,
-    get_progress_percentage
+    get_progress_percentage,
+    get_user_progress,
+    mark_tutorial_complete,
+    increment_tutorial_attempts
+)
+
+# Import command parser utilities
+from utils.command_parser import parse_command, validate_docker_command, get_command_help
+
+# Import visualization utilities
+from utils.visualizations import (
+    render_container_lifecycle_diagram,
+    render_command_visual_feedback,
+    render_progress_visual
+)
+
+# Import animation utilities
+from utils.animations import (
+    animate_wave_separator,
+    animate_success_badge,
+    add_harbor_theme_animations
 )
 
 # Page configuration with harbor theme
@@ -97,6 +117,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Add thematic animations
+add_harbor_theme_animations()
+
 
 def render_sidebar():
     """
@@ -111,11 +134,39 @@ def render_sidebar():
         st.markdown("### Docker Learning")
         st.markdown("---")
 
-        # Progress tracking
+        # Progress tracking with enhanced statistics
         progress = get_progress_percentage()
+        user_progress = get_user_progress()
+        all_tutorials = get_all_tutorials()
+
+        # Calculate statistics
+        total_tutorials = len(all_tutorials)
+        completed_count = sum(1 for p in user_progress.values() if p.completed)
+        in_progress_count = sum(1 for p in user_progress.values() if p.attempts > 0 and not p.completed)
+
         st.markdown("### 📊 Your Progress")
         st.progress(progress / 100)
         st.caption(f"{progress:.0f}% Complete")
+
+        # Detailed statistics
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Completed", f"{completed_count}/{total_tutorials}")
+        with col2:
+            st.metric("In Progress", in_progress_count)
+
+        # Achievement badges
+        if progress >= 100:
+            st.success("🏆 Harbor Master!")
+        elif progress >= 75:
+            st.success("⭐ Senior Captain!")
+        elif progress >= 50:
+            st.info("🌟 Captain!")
+        elif progress >= 25:
+            st.info("⚓ First Mate!")
+        elif progress > 0:
+            st.info("🚢 Sailor!")
+
         st.markdown("---")
 
         # Navigation
@@ -126,7 +177,10 @@ def render_sidebar():
         stats = get_section_stats()
 
         # Section selection
-        section_options = ["🏠 Home"] + [f"📚 {section}" for section in sections]
+        section_options = (
+            ["🏠 Home", "🚢 Container Lifecycle"] +
+            [f"📚 {section}" for section in sections]
+        )
 
         selected = st.radio(
             "Choose a section:",
@@ -209,6 +263,106 @@ def render_footer():
     """)
 
 
+def render_cli_input(tutorial):
+    """
+    Render interactive CLI input area for practicing Docker commands
+
+    Educational Purpose: Allows users to practice commands with instant feedback
+    Metaphor Connection: The CLI is like the harbor control center
+
+    Args:
+        tutorial: TutorialStep object containing expected command
+    """
+    # Initialize session state for command history if not exists
+    if 'command_history' not in st.session_state:
+        st.session_state.command_history = {}
+
+    # Unique key for this tutorial's command input
+    tutorial_key = f"cmd_input_{tutorial.id}"
+    result_key = f"cmd_result_{tutorial.id}"
+
+    # Command input box
+    col1, col2 = st.columns([4, 1])
+
+    with col1:
+        user_command = st.text_input(
+            "Enter your Docker command:",
+            key=tutorial_key,
+            placeholder="e.g., docker run nginx",
+            help="Type the Docker command you want to practice",
+            label_visibility="collapsed"
+        )
+
+    with col2:
+        execute_button = st.button("Execute 🚀", key=f"btn_{tutorial.id}", use_container_width=True)
+
+    # Process command when button is clicked or Enter is pressed
+    if execute_button and user_command:
+        # Parse the command
+        result = parse_command(user_command)
+
+        # Store result in session state
+        st.session_state[result_key] = result
+
+        # Increment attempts counter
+        increment_tutorial_attempts(tutorial.id)
+
+        # Check if it matches the expected command
+        if tutorial.expected_command and validate_docker_command(user_command, tutorial.expected_command):
+            st.session_state[f"correct_{tutorial.id}"] = True
+            # Mark tutorial as complete
+            mark_tutorial_complete(tutorial.id)
+
+    # Display results if available
+    if result_key in st.session_state:
+        result = st.session_state[result_key]
+
+        # Display feedback message
+        if result.valid and result.success:
+            st.success(result.message)
+
+            # Show metaphor explanation
+            if result.metaphor_explanation:
+                st.info(result.metaphor_explanation)
+
+            # Show simulated output
+            if result.output:
+                st.markdown("**Command Output:**")
+                st.code(result.output, language="bash")
+
+            # Show visual feedback for the command
+            if result.action:
+                with st.expander("🎨 Visual Harbor Feedback", expanded=False):
+                    render_command_visual_feedback(result.action, result.target)
+
+            # Check if matches expected command
+            if tutorial.expected_command and f"correct_{tutorial.id}" in st.session_state:
+                if st.session_state[f"correct_{tutorial.id}"]:
+                    st.balloons()
+                    animate_success_badge()
+                else:
+                    st.warning(f"✨ Command executed successfully, but try to match the expected command: `{tutorial.expected_command}`")
+        else:
+            # Show error message
+            st.error(result.message)
+
+            # Show help hint if available
+            if result.help_hint:
+                st.warning(f"💡 **Hint:** {result.help_hint}")
+
+    # Show command help button
+    with st.expander("📖 Command Reference"):
+        if tutorial.expected_command:
+            # Extract action from expected command
+            parts = tutorial.expected_command.split()
+            if len(parts) > 1:
+                action = parts[1]
+                help_text = get_command_help(action)
+                st.code(help_text, language="text")
+        else:
+            st.markdown("No command reference available for this tutorial.")
+
+
 def render_tutorial_section(section_name: str):
     """
     Render a specific tutorial section
@@ -258,11 +412,147 @@ def render_tutorial_section(section_name: str):
                 st.markdown("**Expected Command:**")
                 st.code(tutorial.expected_command, language="bash")
 
+            # Add interactive CLI practice section
+            if tutorial.expected_command:
+                st.markdown("---")
+                st.markdown("### 💻 Practice Command")
+                render_cli_input(tutorial)
+
         # Add separator between tutorials
         if idx < len(tutorials):
-            st.markdown('<div class="harbor-wave">〰️ 〰️ 〰️</div>', unsafe_allow_html=True)
+            animate_wave_separator()
 
     # Render footer
+    render_footer()
+
+
+def render_lifecycle_page():
+    """
+    Render the container lifecycle visualization page
+
+    Educational Purpose: Visual guide to understanding container states
+    and transitions using the harbor metaphor
+    """
+    # Page header
+    st.title("🚢 Container Lifecycle Guide")
+    st.markdown("### *Understanding Docker Container States Through the Harbor Metaphor*")
+    st.markdown("---")
+
+    # Introduction
+    st.markdown("""
+    Docker containers go through different states during their lifecycle, much like
+    ships in a harbor. Understanding these states is crucial for managing your containers
+    effectively.
+    """)
+
+    st.markdown("---")
+
+    # Render the interactive lifecycle diagram
+    render_container_lifecycle_diagram()
+
+    # Additional educational content
+    st.markdown("---")
+    st.header("📖 Understanding Each State")
+
+    # Detailed state explanations
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+        #### 🏗️ Created State
+        **Docker:** Container is created but not started yet
+        **Harbor:** Ship blueprint is ready, vessel under construction
+
+        A container in the "created" state exists but is not running. It's like having
+        a ship ready at the dock but not yet set sail.
+
+        **Common Commands:**
+        - `docker create <image>` - Create without starting
+        - `docker start <container>` - Start a created container
+        """)
+
+        st.markdown("""
+        #### ⚓ Stopped State
+        **Docker:** Container was running but has been stopped
+        **Harbor:** Ship is anchored or docked in the harbor
+
+        A stopped container maintains all its data and configuration but is not actively
+        running. It can be restarted quickly without losing its state.
+
+        **Common Commands:**
+        - `docker stop <container>` - Stop a running container
+        - `docker start <container>` - Restart a stopped container
+        """)
+
+    with col2:
+        st.markdown("""
+        #### ⛵ Running State
+        **Docker:** Container is actively executing
+        **Harbor:** Ship is sailing and performing its duties
+
+        A running container is actively executing its process. This is the operational
+        state where the container does its work.
+
+        **Common Commands:**
+        - `docker run <image>` - Create and start container
+        - `docker ps` - List running containers
+        - `docker logs <container>` - View container output
+        """)
+
+        st.markdown("""
+        #### 🗑️ Removed State
+        **Docker:** Container has been deleted
+        **Harbor:** Ship has left the harbor permanently
+
+        Once removed, a container and its data are gone (unless volumes were used).
+        The image remains, allowing you to create new containers from it.
+
+        **Common Commands:**
+        - `docker rm <container>` - Remove stopped container
+        - `docker rm -f <container>` - Force remove running container
+        """)
+
+    # Interactive practice section
+    st.markdown("---")
+    st.header("🎯 Test Your Understanding")
+
+    with st.expander("📝 Quick Quiz", expanded=False):
+        st.markdown("""
+        **Question 1:** What command changes a container from STOPPED to RUNNING?
+
+        **Answer:** `docker start <container>`
+
+        ---
+
+        **Question 2:** Can you remove a RUNNING container without stopping it first?
+
+        **Answer:** Yes, using `docker rm -f <container>` (force flag)
+
+        ---
+
+        **Question 3:** What's the difference between CREATED and STOPPED states?
+
+        **Answer:** CREATED means the container was never started. STOPPED means it was
+        running before and was intentionally stopped.
+
+        ---
+
+        **Question 4:** Which command shows only RUNNING containers?
+
+        **Answer:** `docker ps` (use `docker ps -a` to show all states)
+        """)
+
+    # Visual progress reminder
+    st.markdown("---")
+    st.header("📊 Your Learning Progress")
+
+    all_tutorials = get_all_tutorials()
+    user_progress = get_user_progress()
+    completed_count = sum(1 for p in user_progress.values() if p.completed)
+
+    render_progress_visual(completed_count, len(all_tutorials))
+
+    # Footer
     render_footer()
 
 
@@ -280,6 +570,8 @@ def main():
     # Route to appropriate view based on selection
     if selected_section == "🏠 Home":
         render_home_page()
+    elif selected_section == "🚢 Container Lifecycle":
+        render_lifecycle_page()
     else:
         # Extract section name (remove emoji prefix)
         section_name = selected_section.replace("📚 ", "")
