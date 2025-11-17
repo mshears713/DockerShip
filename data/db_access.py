@@ -166,36 +166,58 @@ def get_tutorials_by_section(section: str) -> List[TutorialStep]:
     Returns:
         List[TutorialStep]: Tutorials in the specified section
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Step 32: Enhanced Exception Handling
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT id, section, step_number, title, description,
-               expected_command, visual_state, help_text,
-               docker_concept, metaphor_explanation
-        FROM tutorials
-        WHERE section = ?
-        ORDER BY step_number;
-    """, (section,))
+        cursor.execute("""
+            SELECT id, section, step_number, title, description,
+                   expected_command, visual_state, help_text,
+                   docker_concept, metaphor_explanation
+            FROM tutorials
+            WHERE section = ?
+            ORDER BY step_number;
+        """, (section,))
 
-    tutorials = []
-    for row in cursor.fetchall():
-        tutorial = TutorialStep(
-            id=row['id'],
-            section=row['section'],
-            step_number=row['step_number'],
-            title=row['title'],
-            description=row['description'],
-            expected_command=row['expected_command'],
-            visual_state=row['visual_state'],
-            help_text=row['help_text'],
-            docker_concept=row['docker_concept'],
-            metaphor_explanation=row['metaphor_explanation']
-        )
-        tutorials.append(tutorial)
+        tutorials = []
+        for row in cursor.fetchall():
+            tutorial = TutorialStep(
+                id=row['id'],
+                section=row['section'],
+                step_number=row['step_number'],
+                title=row['title'],
+                description=row['description'],
+                expected_command=row['expected_command'],
+                visual_state=row['visual_state'],
+                help_text=row['help_text'],
+                docker_concept=row['docker_concept'],
+                metaphor_explanation=row['metaphor_explanation']
+            )
+            tutorials.append(tutorial)
 
-    conn.close()
-    return tutorials
+        conn.close()
+        return tutorials
+
+    except sqlite3.OperationalError as e:
+        print(f"❌ Database access error in get_tutorials_by_section: {e}")
+        print("💡 The tutorials table may not exist. Try running database initialization.")
+        return []
+
+    except sqlite3.Error as e:
+        print(f"❌ Database error in get_tutorials_by_section: {e}")
+        return []
+
+    except Exception as e:
+        print(f"❌ Unexpected error in get_tutorials_by_section: {e}")
+        return []
+
+    finally:
+        try:
+            if 'conn' in locals():
+                conn.close()
+        except:
+            pass
 
 
 def get_all_sections() -> List[str]:
@@ -205,19 +227,41 @@ def get_all_sections() -> List[str]:
     Returns:
         List[str]: Section names in order of appearance
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Step 32: Enhanced Exception Handling
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT section
-        FROM tutorials
-        GROUP BY section
-        ORDER BY MIN(id);
-    """)
+        cursor.execute("""
+            SELECT section
+            FROM tutorials
+            GROUP BY section
+            ORDER BY MIN(id);
+        """)
 
-    sections = [row['section'] for row in cursor.fetchall()]
-    conn.close()
-    return sections
+        sections = [row['section'] for row in cursor.fetchall()]
+        conn.close()
+        return sections
+
+    except sqlite3.OperationalError as e:
+        print(f"❌ Database access error in get_all_sections: {e}")
+        print("💡 The tutorials table may not exist. Try running database initialization.")
+        return []
+
+    except sqlite3.Error as e:
+        print(f"❌ Database error in get_all_sections: {e}")
+        return []
+
+    except Exception as e:
+        print(f"❌ Unexpected error in get_all_sections: {e}")
+        return []
+
+    finally:
+        try:
+            if 'conn' in locals():
+                conn.close()
+        except:
+            pass
 
 
 def get_section_stats() -> Dict[str, int]:
@@ -227,19 +271,41 @@ def get_section_stats() -> Dict[str, int]:
     Returns:
         Dict[str, int]: Mapping of section name to tutorial count
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Step 32: Enhanced Exception Handling
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT section, COUNT(*) as count
-        FROM tutorials
-        GROUP BY section
-        ORDER BY MIN(id);
-    """)
+        cursor.execute("""
+            SELECT section, COUNT(*) as count
+            FROM tutorials
+            GROUP BY section
+            ORDER BY MIN(id);
+        """)
 
-    stats = {row['section']: row['count'] for row in cursor.fetchall()}
-    conn.close()
-    return stats
+        stats = {row['section']: row['count'] for row in cursor.fetchall()}
+        conn.close()
+        return stats
+
+    except sqlite3.OperationalError as e:
+        print(f"❌ Database access error in get_section_stats: {e}")
+        print("💡 The tutorials table may not exist. Try running database initialization.")
+        return {}
+
+    except sqlite3.Error as e:
+        print(f"❌ Database error in get_section_stats: {e}")
+        return {}
+
+    except Exception as e:
+        print(f"❌ Unexpected error in get_section_stats: {e}")
+        return {}
+
+    finally:
+        try:
+            if 'conn' in locals():
+                conn.close()
+        except:
+            pass
 
 
 # ============================================================================
